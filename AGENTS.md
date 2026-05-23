@@ -1,13 +1,11 @@
 # Gia Phả OS - Agent Instructions
 
-## Project Overview
+Vietnamese family tree app (Next.js 16.2.1 + Supabase). Critical: Must use Bun (not npm/yarn).
 
-Vietnamese family tree management application with Next.js, Supabase, and modern UI. Built for cloud deployment with self-hosted data ownership.
-
-## Development Commands
+## Commands
 
 ```bash
-# Install dependencies
+# Install dependencies (BUN REQUIRED)
 bun install
 
 # Development server
@@ -25,12 +23,11 @@ bun run lint
 
 ## Tech Stack
 
-- **Framework**: Next.js 16.2.1 (App Router)
-- **Language**: TypeScript 5.9.3
-- **UI**: React 19.2.4, Framer Motion, Tailwind CSS 4.2.2
-- **Database**: Supabase (PostgreSQL) + @supabase/ssr
-- **Package Manager**: Bun (required for setup)
-- **Styling**: Tailwind CSS with PostCSS
+- Next.js 16.2.1 (App Router)
+- React 19.2.4, TypeScript 5.9.3
+- Supabase (PostgreSQL) + @supabase/ssr
+- Tailwind CSS 4.2.2 with PostCSS
+- Bun package manager (mandatory, not npm/yarn)
 
 ## Key Architecture Notes
 
@@ -58,10 +55,22 @@ bun run lint
 3. **First User**: Automatically gets Admin role; subsequent users get Member role by default
 4. **Demo Domain**: Auto-detects `giapha-os.homielab.com` and pre-fills demo credentials
 
+### Database Schema (docs/schema.sql)
+- Core tables: `persons`, `relationships`, `custom_events`, `profiles`, `person_details_private`
+- Supports partial dates (year only), lunar calendar events, avatar storage
+- RLS policies: Auth users can view all, Admin/Editors can modify persons/relationships
+- Admin functions: `get_admin_users()`, `set_user_role()`, `delete_user()`
+
 ### User Roles & Permissions
 - **Admin**: Full system access, user management, data export/import
 - **Editor**: Add/edit/delete member info and relationships
 - **Member**: View-only access to family tree and statistics
+
+### Database Constraints
+- **Partial Dates**: Birth/death dates support year-only entries
+- **Lunar Calendar**: Special handling for traditional Vietnamese death dates
+- **Avatar Storage**: Public bucket with user upload/update permissions
+- **Multi-spouse Relationships**: Supported via relationship table constraints
 
 ## Special Features
 
@@ -86,6 +95,11 @@ bun run lint
 - ESLint only (no test suite found)
 - Type checking via TypeScript
 - Build verification with `bun run build`
+
+### Database Setup
+- Must run schema.sql in Supabase to create tables/functions
+- Use `docs/schema.sql` for complete database initialization
+- Storage buckets created automatically (avatars bucket for user images)
 
 ### Build Process
 - Uses Next.js 16.2.1 with default configuration
