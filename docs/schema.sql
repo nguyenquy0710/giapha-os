@@ -117,10 +117,28 @@ CREATE TABLE IF NOT EXISTS public.custom_events (
   event_date DATE NOT NULL,
   location TEXT,
   created_by UUID REFERENCES public.profiles(id) DEFAULT auth.uid(),
+  frequency TEXT DEFAULT 'single' CHECK (frequency IN ('single', 'yearly_lunar')) NOT NULL,
+  lunar_day INTEGER CHECK (lunar_day BETWEEN 1 AND 30),
+  offset_days INTEGER CHECK (offset_days BETWEEN -15 AND 15),
+  last_used_lunar_month INTEGER CHECK (last_used_lunar_month BETWEEN 1 AND 12),
   
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create trigger to auto-update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_custom_events_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_custom_events_updated_at
+  BEFORE UPDATE ON public.custom_events
+  FOR EACH ROW
+  EXECUTE FUNCTION update_custom_events_updated_at();
 
 -- ==========================================
 -- INDEXES
@@ -145,6 +163,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_is_active ON public.profiles(is_active);
 -- Custom events lookups
 CREATE INDEX IF NOT EXISTS idx_custom_events_date ON public.custom_events(event_date);
 CREATE INDEX IF NOT EXISTS idx_custom_events_created_by ON public.custom_events(created_by);
+CREATE INDEX IF NOT EXISTS idx_custom_events_frequency_lunar_day ON public.custom_events(frequency, lunar_day);
 
 -- ==========================================
 -- RLS POLICIES
