@@ -22,6 +22,10 @@ export interface FamilyEvent {
   location?: string | null;
   /** Optional content/description for the event */
   content?: string | null;
+  /** Event recurrence frequency */
+  frequency?: "single" | "yearly_lunar";
+  /** The actual lunar month used for display accuracy (e.g., 12 for农历腊月) */
+  last_used_lunar_month?: number | null;
 }
 
 export interface CustomEventRecord {
@@ -31,6 +35,10 @@ export interface CustomEventRecord {
   event_date: string;
   location: string | null;
   created_by: string | null;
+  frequency: 'single' | 'yearly_lunar';
+  lunar_day: number | null;
+  offset_days: number | null;
+  last_used_lunar_month: number | null;
 }
 
 /**
@@ -68,6 +76,79 @@ function nextSolarForLunar(
     }
   }
   return null;
+}
+
+/**
+ * Generates recurring yearly lunar calendar events for next 365 days.
+ * Handles leap months by storing the actual lunar month used for display.
+ */
+export function generateRecurringEvents(
+  customEvent: CustomEventRecord,
+  lunarDay: number,
+  personId: string,
+  personName: string,
+  location: string | null,
+  content: string | null
+): FamilyEvent[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const events: FamilyEvent[] = [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const LunarClass = Lunar as any;
+
+  // Find first occurrence within current or next years
+  const baseYear = today.getFullYear();
+  let foundFirst = false;
+  let baseSolar = null;
+  let baseLunar = null;
+
+  // Try current year and next 5 years to find valid occurrence
+  for (let offset = 0; offset <= 5; offset++) {
+    try {
+      const l = LunarClass.fromYmd(baseYear + offset, lunarDay, true);
+      const s = l.getSolar();
+      const candidateDate = new Date(s.getYear(), s.getMonth() - 1, s.getDay());
+      
+      if (!foundFirst && candidateDate >= today) {
+        baseSolar = candidateDate;
+        baseLunar = l;
+        foundFirst = true;
+      }
+      
+      if (baseSolar) {
+        const occurrence = new Date(s.getYear(), s.getMonth() - 1, s.getDay());
+        const daysUntil = Math.round(
+          (occurrence.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysUntil <= 365) {
+          // Track the actual lunar month used for display accuracy
+          const actualLunarMonth = Math.abs(baseLunar.getMonth());
+
+          events.push({
+            personId,
+            personName,
+            type: "custom_event",
+            nextOccurrence: occurrence,
+            daysUntil,
+            eventDateLabel: `${lunarDay}/${actualLunarMonth} ÂL`,
+            originMonth: lunarDay,
+            originDay: actualLunarMonth,
+            isDeceased: false,
+            location,
+            content,
+            frequency: "yearly_lunar",
+            last_used_lunar_month: actualLunarMonth,
+          });
+        }
+      }
+    } catch {
+      // If date doesn't exist in this year (leap month edge), try next year
+    }
+  }
+
+  return events;
 }
 
 /**
@@ -217,6 +298,22 @@ export function computeEvents(
   // ── Custom Events (solar) ───────────────────────────────────────
   for (const ce of customEvents) {
     if (!ce.event_date) continue;
+
+    // Handle recurring yearly lunar events
+    if (ce.frequency === 'yearly_lunar' && ce.lunar_day) {
+      const recurringEvents = generateRecurringEvents(
+        ce,
+        ce.lunar_day,
+        ce.id,
+        ce.name,
+        ce.location,
+        ce.content
+      );
+      events.push(...recurringEvents);
+      continue;
+    }
+
+    // Handle single solar events
     const [y, m, d] = ce.event_date.split("-").map(Number);
     if (!y || !m || !d) continue;
 
@@ -236,6 +333,7 @@ export function computeEvents(
       isDeceased: false,
       location: ce.location,
       content: ce.content,
+      frequency: "single",
     });
   }
 

@@ -36,6 +36,8 @@ export default function CustomEventModal({
   const [eventDate, setEventDate] = useState(eventToEdit?.event_date || "");
   const [location, setLocation] = useState(eventToEdit?.location || "");
   const [content, setContent] = useState(eventToEdit?.content || "");
+  const [isRecurring, setIsRecurring] = useState(eventToEdit?.frequency === 'yearly_lunar');
+  const [lunarDay, setLunarDay] = useState(eventToEdit?.lunar_day || "");
 
   // Lunar date mode
   const [dateMode, setDateMode] = useState<"solar" | "lunar">("solar");
@@ -47,30 +49,33 @@ export default function CustomEventModal({
   );
 
   useEffect(() => {
-    if (isOpen) {
-      if (eventToEdit) {
-        setName(eventToEdit.name);
-        setEventDate(eventToEdit.event_date);
-        setLocation(eventToEdit.location || "");
-        setContent(eventToEdit.content || "");
-      } else {
-        setName("");
-        // Default to today
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, "0");
-        const d = String(now.getDate()).padStart(2, "0");
-        setEventDate(`${y}-${m}-${d}`);
-        setLocation("");
-        setContent("");
+if (isOpen) {
+        if (eventToEdit) {
+          setName(eventToEdit.name);
+          setEventDate(eventToEdit.event_date);
+          setLocation(eventToEdit.location || "");
+          setContent(eventToEdit.content || "");
+          setIsRecurring(eventToEdit.frequency === 'yearly_lunar');
+          setLunarDay(eventToEdit.lunar_day ? String(eventToEdit.lunar_day) : "");
+        } else {
+          setName("");
+          // Default to today
+          const now = new Date();
+          const y = now.getFullYear();
+          const m = String(now.getMonth() + 1).padStart(2, "0");
+          const d = String(now.getDate()).padStart(2, "0");
+          setEventDate(`${y}-${m}-${d}`);
+          setLocation("");
+          setContent("");
+          setIsRecurring(false);
+          setLunarDay("");
+        }
+        setError(null);
+        setDateMode("solar");
+        setLunarMonth("");
+        setLunarYear("");
+        setLunarConvertError(null);
       }
-      setError(null);
-      setDateMode("solar");
-      setLunarDay("");
-      setLunarMonth("");
-      setLunarYear("");
-      setLunarConvertError(null);
-    }
   }, [isOpen, eventToEdit]);
 
   // Auto-convert lunar → solar when all 3 fields are filled
@@ -119,12 +124,27 @@ export default function CustomEventModal({
 
     try {
       const supabase = createClient();
-      const payload = {
+      const payload: any = {
         name,
         event_date: eventDate,
         location: location || null,
         content: content || null,
       };
+
+      // Handle recurring yearly lunar events
+      if (isRecurring && lunarDay) {
+        payload.frequency = 'yearly_lunar';
+        payload.lunar_day = parseInt(lunarDay);
+      } else {
+        payload.frequency = 'single';
+        payload.lunar_day = null;
+      }
+    } catch {
+      setError("Đã xảy ra lỗi khi lưu sự kiện.");
+    }
+  } finally {
+    setLoading(false);
+  }
 
       let resultError;
       if (eventToEdit) {
@@ -400,7 +420,104 @@ export default function CustomEventModal({
                         onChange={(e) => setContent(e.target.value)}
                       />
                     </div>
+</div>
+                 </motion.div>
+
+                {/* Repeat Event Section */}
+                <motion.div
+                  variants={formSectionVariants}
+                  initial="hidden"
+                  animate="show"
+                  transition={{ delay: 0.15 }}
+                  className="bg-amber-50/60 p-5 sm:p-6 rounded-2xl shadow-sm border border-amber-200/60 space-y-5"
+                >
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          className="peer sr-only"
+                          checked={isRecurring}
+                          onChange={(e) => setIsRecurring(e.target.checked)}
+                        />
+                        <div className="w-6 h-6 bg-white border-2 border-stone-300 rounded-lg peer-checked:bg-amber-500 peer-checked:border-amber-500 transition-all"></div>
+                        <Moon className="absolute inset-0 m-auto w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                      </div>
+                      <span className="text-sm font-semibold text-stone-700">
+                        Lặp lại hàng năm
+                      </span>
+                    </label>
+                    {isRecurring && (
+                      <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-medium">
+                        Âm lịch
+                      </span>
+                    )}
                   </div>
+
+                  {isRecurring && (
+                    <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                      <div className="bg-white/80 border border-stone-200 rounded-xl p-4">
+                        <div className="flex items-center gap-3 text-sm text-stone-600 mb-2">
+                          <Moon className="size-5 text-amber-600" />
+                          <span className="font-medium">Ngày tháng âm lịch</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-stone-500 mb-1">
+                              Ngày
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="VD: 23"
+                              min="1"
+                              max="30"
+                              required
+                              value={lunarDay}
+                              onChange={(e) =>
+                                setLunarDay(
+                                  e.target.value ? Number(e.target.value) : ""
+                                )
+                              }
+                              className={inputClasses}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-stone-500 mb-1">
+                              Tháng
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="VD: 12"
+                              min="1"
+                              max="12"
+                              readOnly
+                              disabled
+                              className={`${inputClasses} bg-stone-100/80 cursor-not-allowed`}
+                              value="12 (Nguyên âm / Giỗ tháng 12)"
+                            />
+                          </div>
+                          <div className="col-span-3">
+                            <div className="space-y-2">
+                              <p className="text-xs text-stone-500 flex items-center gap-1.5">
+                                <AlertCircle className="size-3" />
+                                <span>
+                                  Ẩn lịch tự động điều chỉnh tháng nếu năm nhuận và hiển thị chính xác tháng lịch.
+                                </span>
+                              </p>
+                              {eventDate && (
+                                <p className="text-xs text-amber-800 bg-amber-100/80 px-3 py-2 rounded-lg">
+                                  <span className="font-semibold">Demo预告:</span> Lần tiếp theo sẽ hiển thị:{" "}
+                                  <span className="font-bold text-amber-900">
+                                    Ngày {lunarDay}/[Lunar_Tháng] ÂL
+                                  </span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
 
                 <motion.div

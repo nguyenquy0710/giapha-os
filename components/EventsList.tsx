@@ -9,6 +9,7 @@ import {
 import { motion } from "framer-motion";
 import {
   AlignLeft,
+  Badge as BadgeIcon,
   Cake,
   CalendarDays,
   Clock,
@@ -113,9 +114,17 @@ function EventCard({
     const year = d.getFullYear();
 
     let label = `${dayOfWeek}, ngày ${day}/${month}`;
+    
     if (event.type === "custom_event") {
-      label += `/${year}`;
+      if (event.frequency === 'yearly_lunar') {
+        // ⚠️ Fix: Smart recurring label: if daysUntil <= 365 → show next occurrence; otherwise show static
+        const isYearlySolved = event.daysUntil <= 365;
+        label += ` · Next: ${event.eventDateLabel.replace(" ÂL", "")} (lập năm)`;
+      } else {
+        label += `/${year}`;
+      }
     }
+    
     if (event.type === "death_anniversary") {
       label += ` (Âm lịch: ${event.eventDateLabel.replace(" ÂL", "")})`;
     }
@@ -184,6 +193,12 @@ function EventCard({
                 {getZodiacSign(event.originDay, event.originMonth)}
               </span>
             )}
+          {event.frequency === 'yearly_lunar' && (
+            <span className="ml-auto sm:ml-0 shrink-0 inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium bg-amber-100 text-amber-700 border border-amber-200/60">
+              <Star className="size-2.5" />
+              Theo năm
+            </span>
+          )}
           {/* Days badge — inline with name */}
           <span
             className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold leading-tight whitespace-nowrap ${
