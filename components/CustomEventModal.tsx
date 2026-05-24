@@ -135,6 +135,7 @@ if (isOpen) {
         payload.frequency = 'yearly_lunar';
         payload.lunar_day = typeof lunarDay === 'number' ? lunarDay : parseInt(lunarDay);
       } else {
+        // Default to single occurrence if not recurring
         payload.frequency = 'single';
         payload.lunar_day = null;
       }
