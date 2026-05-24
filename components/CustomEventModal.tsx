@@ -55,6 +55,7 @@ if (isOpen) {
           setLocation(eventToEdit.location || "");
           setContent(eventToEdit.content || "");
           setIsRecurring(eventToEdit.frequency === 'yearly_lunar');
+          setLunarMonth(eventToEdit.lunar_month || "");
           setLunarDay(eventToEdit.lunar_day ? String(eventToEdit.lunar_day) : "");
         } else {
           setName("");
@@ -67,6 +68,7 @@ if (isOpen) {
           setLocation("");
           setContent("");
           setIsRecurring(false);
+          setLunarMonth("");
           setLunarDay("");
         }
         setError(null);
@@ -131,12 +133,14 @@ if (isOpen) {
       };
 
       // Handle recurring yearly lunar events
-      if (isRecurring && lunarDay) {
+      if (isRecurring && lunarDay && lunarMonth) {
         payload.frequency = 'yearly_lunar';
+        payload.lunar_month = typeof lunarMonth === 'number' ? lunarMonth : parseInt(lunarMonth);
         payload.lunar_day = typeof lunarDay === 'number' ? lunarDay : parseInt(lunarDay);
       } else {
         // Default to single occurrence if not recurring
         payload.frequency = 'single';
+        payload.lunar_month = null;
         payload.lunar_day = null;
       }
 
@@ -484,10 +488,14 @@ if (isOpen) {
                               placeholder="VD: 12"
                               min="1"
                               max="12"
-                              readOnly
-                              disabled
-                              className={`${inputClasses} bg-stone-100/80 cursor-not-allowed`}
-                              value="12 (Nguyên âm / Giỗ tháng 12)"
+                              required
+                              value={lunarMonth}
+                              onChange={(e) =>
+                                setLunarMonth(
+                                  e.target.value ? Number(e.target.value) : ""
+                                )
+                              }
+                              className={inputClasses}
                             />
                           </div>
                           <div className="col-span-3">
@@ -495,14 +503,14 @@ if (isOpen) {
                               <p className="text-xs text-stone-500 flex items-center gap-1.5">
                                 <AlertCircle className="size-3" />
                                 <span>
-                                  Ẩn lịch tự động điều chỉnh tháng nếu năm nhuận và hiển thị chính xác tháng lịch.
+                                  Hệ thống tự động điều chỉnh tháng nhuận và hiển thị chính xác.
                                 </span>
                               </p>
-                              {eventDate && (
+                              {lunarDay && lunarMonth && (
                                 <p className="text-xs text-amber-800 bg-amber-100/80 px-3 py-2 rounded-lg">
-                                  <span className="font-semibold">Demo预告:</span> Lần tiếp theo sẽ hiển thị:{" "}
+                                  <span className="font-semibold">Xem trước:</span> Lần tiếp theo sẽ hiển thị:{" "}
                                   <span className="font-bold text-amber-900">
-                                    Ngày {lunarDay}/[Lunar_Tháng] ÂL
+                                    Ngày {lunarDay}/{lunarMonth} ÂL
                                   </span>
                                 </p>
                               )}

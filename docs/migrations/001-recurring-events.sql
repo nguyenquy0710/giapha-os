@@ -4,6 +4,7 @@
 -- Add recurrence columns (IF NOT EXISTS prevents errors if already present)
 ALTER TABLE custom_events
   ADD COLUMN IF NOT EXISTS frequency TEXT DEFAULT 'single',
+  ADD COLUMN IF NOT EXISTS lunar_month INTEGER,
   ADD COLUMN IF NOT EXISTS lunar_day INTEGER,
   ADD COLUMN IF NOT EXISTS offset_days INTEGER,
   ADD COLUMN IF NOT EXISTS last_used_lunar_month INTEGER;
@@ -15,6 +16,13 @@ DO $$ BEGIN
                  WHERE constraint_name = 'custom_events_frequency_check') THEN
     ALTER TABLE custom_events ADD CONSTRAINT custom_events_frequency_check 
       CHECK (frequency IN ('single', 'yearly_lunar'));
+  END IF;
+  
+  -- lunar_month: 1-12
+  IF NOT EXISTS (SELECT 1 FROM information_schema.constraint_column_usage 
+                 WHERE constraint_name = 'custom_events_lunar_month_check') THEN
+    ALTER TABLE custom_events ADD CONSTRAINT custom_events_lunar_month_check 
+      CHECK (lunar_month IS NULL OR (lunar_month BETWEEN 1 AND 12));
   END IF;
   
   -- lunar_day: 1-30
@@ -41,5 +49,5 @@ END $$;
 
 -- Index for recurring event queries
 CREATE INDEX IF NOT EXISTS idx_custom_events_frequency_lunar_day 
-  ON public.custom_events(frequency, lunar_day) 
+  ON public.custom_events(frequency, lunar_month, lunar_day) 
   WHERE frequency = 'yearly_lunar';

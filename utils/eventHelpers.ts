@@ -36,6 +36,7 @@ export interface CustomEventRecord {
   location: string | null;
   created_by: string | null;
   frequency?: 'single' | 'yearly_lunar';
+  lunar_month?: number | null;
   lunar_day?: number | null;
   offset_days?: number | null;
   last_used_lunar_month?: number | null;
@@ -84,6 +85,7 @@ function nextSolarForLunar(
  */
 export function generateRecurringEvents(
   customEvent: CustomEventRecord,
+  lunarMonth: number,
   lunarDay: number,
   personId: string,
   personName: string,
@@ -97,43 +99,31 @@ export function generateRecurringEvents(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const LunarClass = Lunar as any;
 
-  // Find first occurrence within current or next years
+  // Try current year and next 5 years to find valid occurrences within 365 days
   const baseYear = today.getFullYear();
-  let foundFirst = false;
-  let baseSolar = null;
-  let baseLunar = null;
-
-  // Try current year and next 5 years to find valid occurrence
   for (let offset = 0; offset <= 5; offset++) {
     try {
-      const l = LunarClass.fromYmd(baseYear + offset, lunarDay, true);
-      const s = l.getSolar();
-      const candidateDate = new Date(s.getYear(), s.getMonth() - 1, s.getDay());
-      
-      if (!foundFirst && candidateDate >= today) {
-        baseSolar = candidateDate;
-        baseLunar = l;
-        foundFirst = true;
-      }
-      
-      if (baseSolar) {
-        const occurrence = new Date(s.getYear(), s.getMonth() - 1, s.getDay());
+      const lunar = LunarClass.fromYmd(baseYear + offset, lunarMonth, lunarDay);
+      const solar = lunar.getSolar();
+      const candidateDate = new Date(solar.getYear(), solar.getMonth() - 1, solar.getDay());
+
+      if (candidateDate >= today) {
         const daysUntil = Math.round(
-          (occurrence.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+          (candidateDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
         );
 
         if (daysUntil <= 365) {
           // Track the actual lunar month used for display accuracy
-          const actualLunarMonth = Math.abs(baseLunar.getMonth());
+          const actualLunarMonth = Math.abs(lunar.getMonth());
 
           events.push({
             personId,
             personName,
             type: "custom_event",
-            nextOccurrence: occurrence,
+            nextOccurrence: candidateDate,
             daysUntil,
             eventDateLabel: `${lunarDay}/${actualLunarMonth} ÂL`,
-            originMonth: lunarDay,
+            originMonth: lunarMonth,
             originDay: actualLunarMonth,
             isDeceased: false,
             location,
@@ -300,9 +290,10 @@ export function computeEvents(
     if (!ce.event_date) continue;
 
     // Handle recurring yearly lunar events
-    if (ce.frequency === 'yearly_lunar' && ce.lunar_day) {
+    if (ce.frequency === 'yearly_lunar' && ce.lunar_month && ce.lunar_day) {
       const recurringEvents = generateRecurringEvents(
         ce,
+        ce.lunar_month,
         ce.lunar_day,
         ce.id,
         ce.name,
