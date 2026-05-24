@@ -35,10 +35,10 @@ export interface CustomEventRecord {
   event_date: string;
   location: string | null;
   created_by: string | null;
-  frequency: 'single' | 'yearly_lunar';
-  lunar_day: number | null;
-  offset_days: number | null;
-  last_used_lunar_month: number | null;
+  frequency?: 'single' | 'yearly_lunar';
+  lunar_day?: number | null;
+  offset_days?: number | null;
+  last_used_lunar_month?: number | null;
 }
 
 /**

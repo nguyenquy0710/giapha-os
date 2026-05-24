@@ -117,9 +117,8 @@ function EventCard({
     
     if (event.type === "custom_event") {
       if (event.frequency === 'yearly_lunar') {
-        // ⚠️ Fix: Smart recurring label: if daysUntil <= 365 → show next occurrence; otherwise show static
-        const isYearlySolved = event.daysUntil <= 365;
-        label += ` · Next: ${event.eventDateLabel.replace(" ÂL", "")} (lập năm)`;
+        // Show next occurrence for yearly lunar events (already filtered to <= 365 days)
+        label += ` · Tiếp: ${event.eventDateLabel.replace(" ÂL", "")} (lập năm)`;
       } else {
         label += `/${year}`;
       }

@@ -37,11 +37,10 @@ export default function CustomEventModal({
   const [location, setLocation] = useState(eventToEdit?.location || "");
   const [content, setContent] = useState(eventToEdit?.content || "");
   const [isRecurring, setIsRecurring] = useState(eventToEdit?.frequency === 'yearly_lunar');
-  const [lunarDay, setLunarDay] = useState(eventToEdit?.lunar_day || "");
+  const [lunarDay, setLunarDay] = useState<string | number>(eventToEdit?.lunar_day || "");
 
   // Lunar date mode
   const [dateMode, setDateMode] = useState<"solar" | "lunar">("solar");
-  const [lunarDay, setLunarDay] = useState<number | "">("");
   const [lunarMonth, setLunarMonth] = useState<number | "">("");
   const [lunarYear, setLunarYear] = useState<number | "">("");
   const [lunarConvertError, setLunarConvertError] = useState<string | null>(
@@ -134,17 +133,11 @@ if (isOpen) {
       // Handle recurring yearly lunar events
       if (isRecurring && lunarDay) {
         payload.frequency = 'yearly_lunar';
-        payload.lunar_day = parseInt(lunarDay);
+        payload.lunar_day = typeof lunarDay === 'number' ? lunarDay : parseInt(lunarDay);
       } else {
         payload.frequency = 'single';
         payload.lunar_day = null;
       }
-    } catch {
-      setError("Đã xảy ra lỗi khi lưu sự kiện.");
-    }
-  } finally {
-    setLoading(false);
-  }
 
       let resultError;
       if (eventToEdit) {
