@@ -11,6 +11,7 @@ ALTER TABLE public.custom_events
 
 -- Backfill + enforce NOT NULL to match schema.sql
 UPDATE public.custom_events SET frequency = 'single' WHERE frequency IS NULL;
+ALTER TABLE public.custom_events ALTER COLUMN frequency SET DEFAULT 'single';
 ALTER TABLE public.custom_events ALTER COLUMN frequency SET NOT NULL;
 
 -- Add check constraints (separate from column creation for IF NOT EXISTS compatibility)

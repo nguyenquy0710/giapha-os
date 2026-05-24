@@ -73,7 +73,6 @@ if (isOpen) {
         }
         setError(null);
         setDateMode("solar");
-        setLunarMonth("");
         setLunarYear("");
         setLunarConvertError(null);
       }

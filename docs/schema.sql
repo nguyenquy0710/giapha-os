@@ -164,7 +164,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_is_active ON public.profiles(is_active);
 -- Custom events lookups
 CREATE INDEX IF NOT EXISTS idx_custom_events_date ON public.custom_events(event_date);
 CREATE INDEX IF NOT EXISTS idx_custom_events_created_by ON public.custom_events(created_by);
-CREATE INDEX IF NOT EXISTS idx_custom_events_frequency_lunar_day ON public.custom_events(frequency, lunar_month, lunar_day);
+CREATE INDEX IF NOT EXISTS idx_custom_events_frequency_lunar_day ON public.custom_events(frequency, lunar_month, lunar_day) WHERE frequency = 'yearly_lunar';
 
 -- ==========================================
 -- RLS POLICIES

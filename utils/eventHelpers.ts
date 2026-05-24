@@ -84,7 +84,6 @@ function nextSolarForLunar(
  * Handles leap months by storing the actual lunar month used for display.
  */
 export function generateRecurringEvents(
-  _customEvent: CustomEventRecord,
   lunarMonth: number,
   lunarDay: number,
   personId: string,
@@ -129,7 +128,7 @@ export function generateRecurringEvents(
             daysUntil,
             eventDateLabel: `${lunarDay}/${actualLunarMonth} ÂL`,
             originMonth: lunarMonth,
-            originDay: actualLunarMonth,
+            originDay: lunarDay,
             isDeceased: false,
             location,
             content,
@@ -297,7 +296,6 @@ export function computeEvents(
     // Handle recurring yearly lunar events
     if (ce.frequency === 'yearly_lunar' && ce.lunar_month && ce.lunar_day) {
       const recurringEvents = generateRecurringEvents(
-        ce,
         ce.lunar_month,
         ce.lunar_day,
         ce.id,

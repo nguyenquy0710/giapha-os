@@ -13,7 +13,14 @@ const testEvent: CustomEventRecord = {
 };
 
 console.log("--- Bắt đầu Test ---");
-const events = generateRecurringEvents(testEvent, 4, 28, "p1", "Thành viên test", "Nhà", "Nội dung");
+const events = generateRecurringEvents(
+  testEvent.lunar_month as number,
+  testEvent.lunar_day as number,
+  "p1",
+  "Thành viên test",
+  "Nhà",
+  "Nội dung",
+);
 
 console.log("Số lượng sự kiện tìm thấy:", events.length);
 events.forEach((e, i) => {
