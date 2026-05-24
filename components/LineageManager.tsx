@@ -329,6 +329,20 @@ export default function LineageManager({
     }
   };
 
+  const handleBirthOrderEdit = (id: string, newValue: number | null) => {
+    setUpdates((prev) => {
+      if (!prev) return prev;
+      return prev.map((u) => {
+        if (u.id !== id) return u;
+        const changed =
+          newValue !== u.old_birth_order ||
+          u.new_generation !== u.old_generation ||
+          u.new_is_in_law !== u.old_is_in_law;
+        return { ...u, new_birth_order: newValue, changed };
+      });
+    });
+  };
+
   const handleApply = async () => {
     if (!updates) return;
     setApplying(true);
@@ -494,17 +508,26 @@ export default function LineageManager({
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="text-stone-400">
-                          {u.old_birth_order ?? "—"}
-                        </span>
-                        {u.old_birth_order !== u.new_birth_order && (
-                          <>
-                            <span className="mx-2 text-stone-300">→</span>
-                            <span className="font-bold text-amber-700">
-                              {u.new_birth_order ?? "—"}
-                            </span>
-                          </>
-                        )}
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-stone-400">
+                            {u.old_birth_order ?? "—"}
+                          </span>
+                          <span className="mx-1 text-stone-300">→</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={u.new_birth_order ?? ""}
+                            onChange={(e) => {
+                              const val =
+                                e.target.value === ""
+                                  ? null
+                                  : parseInt(e.target.value, 10);
+                              handleBirthOrderEdit(u.id, isNaN(val as number) ? null : val);
+                            }}
+                            className="w-16 text-center font-bold text-amber-700 border border-amber-200/60 rounded-lg px-1.5 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            placeholder="—"
+                          />
+                        </div>
                       </td>
                         <td className="px-4 py-3 text-center">
                           <span
