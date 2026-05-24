@@ -99,8 +99,13 @@ export function generateRecurringEvents(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const LunarClass = Lunar as any;
 
-  // Try current year and next 5 years to find valid occurrences within 365 days
-  const baseYear = today.getFullYear();
+  // Try current lunar year and next 5 years to find valid occurrences within 365 days
+  const todaySolar = Solar.fromYmd(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate(),
+  );
+  const baseYear = todaySolar.getLunar().getYear();
   for (let offset = 0; offset <= 5; offset++) {
     try {
       const lunar = LunarClass.fromYmd(baseYear + offset, lunarMonth, lunarDay);
