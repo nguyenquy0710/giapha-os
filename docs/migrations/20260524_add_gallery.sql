@@ -40,18 +40,22 @@ VALUES ('gallery', 'gallery', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies
-CREATE POLICY "Public Access"
+DROP POLICY IF EXISTS "gallery objects public read" ON storage.objects;
+CREATE POLICY "gallery objects public read"
 ON storage.objects FOR SELECT
 USING ( bucket_id = 'gallery' );
 
-CREATE POLICY "Authenticated users can upload"
+DROP POLICY IF EXISTS "gallery objects authenticated upload" ON storage.objects;
+CREATE POLICY "gallery objects authenticated upload"
 ON storage.objects FOR INSERT
 WITH CHECK ( bucket_id = 'gallery' AND auth.role() = 'authenticated' );
 
-CREATE POLICY "Admin and owner can update"
+DROP POLICY IF EXISTS "gallery objects admin and owner update" ON storage.objects;
+CREATE POLICY "gallery objects admin and owner update"
 ON storage.objects FOR UPDATE
 USING ( bucket_id = 'gallery' AND (auth.uid() = owner OR EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin')) );
 
-CREATE POLICY "Admin and owner can delete"
+DROP POLICY IF EXISTS "gallery objects admin and owner delete" ON storage.objects;
+CREATE POLICY "gallery objects admin and owner delete"
 ON storage.objects FOR DELETE
 USING ( bucket_id = 'gallery' AND (auth.uid() = owner OR EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin')) );
