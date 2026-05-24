@@ -84,7 +84,7 @@ function nextSolarForLunar(
  * Handles leap months by storing the actual lunar month used for display.
  */
 export function generateRecurringEvents(
-  customEvent: CustomEventRecord,
+  _customEvent: CustomEventRecord,
   lunarMonth: number,
   lunarDay: number,
   personId: string,
