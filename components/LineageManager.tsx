@@ -330,15 +330,17 @@ export default function LineageManager({
   };
 
   const handleBirthOrderEdit = (id: string, newValue: number | null) => {
+    // If newValue is a number less than 1, treat it as null (invalid)
+    const value = newValue !== null && newValue < 1 ? null : newValue;
     setUpdates((prev) => {
       if (!prev) return prev;
       return prev.map((u) => {
         if (u.id !== id) return u;
         const changed =
-          newValue !== u.old_birth_order ||
+          value !== u.old_birth_order ||
           u.new_generation !== u.old_generation ||
           u.new_is_in_law !== u.old_is_in_law;
-        return { ...u, new_birth_order: newValue, changed };
+        return { ...u, new_birth_order: value, changed };
       });
     });
   };
