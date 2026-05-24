@@ -53,18 +53,29 @@ export default function UploadModal({
     };
   }, [isOpen]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0];
-    if (selected) {
-      if (selected.size > 10 * 1024 * 1024) {
-        setError("File size must be less than 10MB");
-        return;
-      }
-      setFile(selected);
-      const url = URL.createObjectURL(selected);
-      setPreview(url);
-      setError(null);
+  const validateAndSetFile = (selected?: File | null) => {
+    if (!selected) {
+      return;
     }
+
+    if (!selected.type.startsWith("image/")) {
+      setError("Please select a valid image file");
+      return;
+    }
+
+    if (selected.size > 10 * 1024 * 1024) {
+      setError("File size must be less than 10MB");
+      return;
+    }
+
+    setFile(selected);
+    const url = URL.createObjectURL(selected);
+    setPreview(url);
+    setError(null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    validateAndSetFile(e.target.files?.[0]);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -73,12 +84,7 @@ export default function UploadModal({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const dropped = e.dataTransfer.files?.[0];
-    if (dropped && dropped.type.startsWith("image/")) {
-      setFile(dropped);
-      setPreview(URL.createObjectURL(dropped));
-      setError(null);
-    }
+    validateAndSetFile(e.dataTransfer.files?.[0]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
