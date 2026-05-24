@@ -4,23 +4,22 @@ Version: 1.1.0
 Next.js 16.2.1, Supabase, Bun.
 
 ## Mandatory Rules
-- Use `bun` (not npm/yarn).
-- Schema: `docs/schema.sql` (critical for RLS/functions).
-- Auth: Configure Supabase redirects for deployment domain.
-- UI: 16px min font (iOS zoom fix).
+- Use `bun` exclusively.
+- DB Schema: `docs/schema.sql` (source of truth for RLS/functions).
+- Auth: Supabase (check redirects for custom domains).
+- UI: Min 16px font (prevent iOS auto-zoom).
 
 ## Commands
 - `bun install`: Deps.
-- `bun run dev`: Dev.
-- `bun run build`: Build check.
-- `bun run lint`: Lint.
+- `bun run dev`: Local dev server.
+- `bun run build`: Build verification.
+- `bun run lint`: Linting.
 
 ## Data/Logic
-- Roles: Admin (full), Editor (edit), Member (view).
-- Kinship: Handles Vietnamese terms, multi-spouse, lunar dates.
-- Partial dates: Supported (year-only).
+- Auth Roles: Admin (full), Editor (edit), Member (view).
+- Kinship: Vietnamese terms, multi-spouse, lunar dates, partial dates (year-only).
 
 ## Gotchas
-- No test suite, rely on ESLint + TypeScript.
-- Admin: First registered user auto-promoted.
-- Demo: Auto-detects `giapha-os.homielab.com`.
+- No tests: Rely on strict TypeScript + ESLint.
+- Admin setup: First user is auto-promoted.
+- Env/Demo: Detects `giapha-os.homielab.com`.
