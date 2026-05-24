@@ -2,12 +2,16 @@
 -- Run this in Supabase SQL Editor (https://supabase.com/dashboard/project/YOUR-PROJECT/sql)
 
 -- Add recurrence columns (IF NOT EXISTS prevents errors if already present)
-ALTER TABLE custom_events
+ALTER TABLE public.custom_events
   ADD COLUMN IF NOT EXISTS frequency TEXT DEFAULT 'single',
   ADD COLUMN IF NOT EXISTS lunar_month INTEGER,
   ADD COLUMN IF NOT EXISTS lunar_day INTEGER,
   ADD COLUMN IF NOT EXISTS offset_days INTEGER,
   ADD COLUMN IF NOT EXISTS last_used_lunar_month INTEGER;
+
+-- Backfill + enforce NOT NULL to match schema.sql
+UPDATE public.custom_events SET frequency = 'single' WHERE frequency IS NULL;
+ALTER TABLE public.custom_events ALTER COLUMN frequency SET NOT NULL;
 
 -- Add check constraints (separate from column creation for IF NOT EXISTS compatibility)
 DO $$ BEGIN
