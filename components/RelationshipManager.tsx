@@ -47,7 +47,7 @@ export default function RelationshipManager({
   const personId = person.id;
   const personGender = person.gender;
 
-  // If inside DashboardProvider → open modal; otherwise → navigate to full page
+  // If inside MemberListProvider → open modal; otherwise → navigate to full page
   const handlePersonClick = (id: string) => {
     if (memberListContext !== undefined) {
       setMemberModalId(id);
