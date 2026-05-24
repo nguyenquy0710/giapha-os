@@ -26,6 +26,8 @@ interface ComputedUpdate {
   new_generation: number | null;
   old_birth_order: number | null;
   new_birth_order: number | null;
+  old_birth_year: number | null;
+  new_birth_year: number | null;
   old_is_in_law: boolean;
   new_is_in_law: boolean;
   gender: string;
@@ -288,27 +290,28 @@ export default function LineageManager({
       const orderMap = computeBirthOrders(persons, relationships);
       const inLawMap = computeInLaws(persons, relationships);
 
-      const result: ComputedUpdate[] = persons.map((p) => {
-        const newGen = genMap.has(p.id) ? genMap.get(p.id)! : null;
-        const newOrder = orderMap.has(p.id) ? orderMap.get(p.id)! : null;
-        const newInLaw = inLawMap.get(p.id) ?? false;
-
-        return {
-          id: p.id,
-          full_name: p.full_name,
-          old_generation: p.generation,
-          new_generation: newGen,
-          old_birth_order: p.birth_order,
-          new_birth_order: newOrder,
-          old_is_in_law: p.is_in_law,
-          new_is_in_law: newInLaw,
-          gender: p.gender,
-          changed:
-            newGen !== p.generation ||
-            newOrder !== p.birth_order ||
-            newInLaw !== p.is_in_law,
-        };
-      });
+       const result: ComputedUpdate[] = persons.map((p) => {
+         const newGen = genMap.has(p.id) ? genMap.get(p.id)! : null;
+         const newOrder = orderMap.has(p.id) ? orderMap.get(p.id)! : null;
+         const newInLaw = inLawMap.get(p.id) ?? false;
+         return {
+           id: p.id,
+           full_name: p.full_name,
+           old_generation: p.generation,
+           new_generation: newGen,
+           old_birth_order: p.birth_order,
+           new_birth_order: newOrder,
+           old_birth_year: p.birth_year,
+           new_birth_year: p.birth_year, // birth year is not recomputed, kept as-is
+           old_is_in_law: p.is_in_law,
+           new_is_in_law: newInLaw,
+           gender: p.gender,
+           changed:
+             newGen !== p.generation ||
+             newOrder !== p.birth_order ||
+             newInLaw !== p.is_in_law,
+         };
+       });
 
       // Sort: changed first, then by new generation, then by new birth_order
       result.sort((a, b) => {
@@ -329,6 +332,38 @@ export default function LineageManager({
     }
   };
 
+  const handleBirthYearEdit = (id: string, newValue: number | null) => {
+    setUpdates((prev) => {
+      if (!prev) return prev;
+      return prev.map((u) => {
+        if (u.id !== id) return u;
+        const changed =
+          u.new_generation !== u.old_generation ||
+          u.new_birth_order !== u.old_birth_order ||
+          newValue !== u.old_birth_year ||
+          u.new_is_in_law !== u.old_is_in_law;
+        return { ...u, new_birth_year: newValue, changed };
+      });
+    });
+  };
+
+  const handleBirthOrderEdit = (id: string, newValue: number | null) => {
+    // If newValue is a number less than 1, treat it as null (invalid)
+    const value = newValue !== null && newValue < 1 ? null : newValue;
+    setUpdates((prev) => {
+      if (!prev) return prev;
+      return prev.map((u) => {
+        if (u.id !== id) return u;
+        const changed =
+          u.new_generation !== u.old_generation ||
+          value !== u.old_birth_order ||
+          u.new_birth_year !== u.old_birth_year ||
+          u.new_is_in_law !== u.old_is_in_law;
+        return { ...u, new_birth_order: value, changed };
+      });
+    });
+  };
+
   const handleApply = async () => {
     if (!updates) return;
     setApplying(true);
@@ -341,18 +376,19 @@ export default function LineageManager({
       for (let i = 0; i < changedOnly.length; i += CHUNK) {
         const chunk = changedOnly.slice(i, i + CHUNK);
         // Update each person individually (Supabase doesn't support bulk upsert with different values easily)
-        await Promise.all(
-          chunk.map((u) =>
-            supabase
-              .from("persons")
-              .update({
-                generation: u.new_generation,
-                birth_order: u.new_birth_order,
-                is_in_law: u.new_is_in_law,
-              })
-              .eq("id", u.id),
-          ),
-        );
+         await Promise.all(
+           chunk.map((u) =>
+             supabase
+               .from("persons")
+               .update({
+                 generation: u.new_generation,
+                 birth_order: u.new_birth_order,
+                 birth_year: u.new_birth_year,
+                 is_in_law: u.new_is_in_law,
+               })
+               .eq("id", u.id),
+           ),
+         );
       }
       setApplied(true);
     } catch (err) {
@@ -451,22 +487,25 @@ export default function LineageManager({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                    <tr className="bg-stone-50 border-b border-stone-200/80">
-                      <th className="text-left px-4 py-3 font-semibold text-stone-600 whitespace-nowrap">
-                        Tên
-                      </th>
-                      <th className="text-center px-4 py-3 font-semibold text-stone-600 whitespace-nowrap">
-                        Thế hệ
-                      </th>
-                      <th className="text-center px-4 py-3 font-semibold text-stone-600 whitespace-nowrap">
-                        Thứ tự
-                      </th>
-                      <th className="text-center px-4 py-3 font-semibold text-stone-600 whitespace-nowrap">
-                        Dâu/Rể
-                      </th>
-                      <th className="text-center px-4 py-3 font-semibold text-stone-600">
-                        Trạng thái
-                      </th>
+                     <tr className="bg-stone-50 border-b border-stone-200/80">
+                       <th className="text-left px-4 py-3 font-semibold text-stone-600 whitespace-nowrap">
+                         Tên
+                       </th>
+                       <th className="text-center px-4 py-3 font-semibold text-stone-600 whitespace-nowrap">
+                         Năm Sinh
+                       </th>
+                       <th className="text-center px-4 py-3 font-semibold text-stone-600 whitespace-nowrap">
+                         Thế hệ
+                       </th>
+                       <th className="text-center px-4 py-3 font-semibold text-stone-600 whitespace-nowrap">
+                         Thứ tự
+                       </th>
+                       <th className="text-center px-4 py-3 font-semibold text-stone-600 whitespace-nowrap">
+                         Dâu/Rể
+                       </th>
+                       <th className="text-center px-4 py-3 font-semibold text-stone-600">
+                         Trạng thái
+                       </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -476,74 +515,104 @@ export default function LineageManager({
                       className={`border-b border-stone-100 last:border-0 transition-colors ${
                         u.changed ? "bg-amber-50/40" : ""
                       } ${i % 2 === 0 && !u.changed ? "bg-white" : !u.changed ? "bg-stone-50/30" : ""}`}
-                    >
-                      <td className="px-4 py-3 font-medium text-stone-800">
-                        {u.full_name}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-stone-400">
-                          {u.old_generation ?? "—"}
-                        </span>
-                        {u.old_generation !== u.new_generation && (
-                          <>
-                            <span className="mx-2 text-stone-300">→</span>
-                            <span className="font-bold text-amber-700">
-                              {u.new_generation ?? "—"}
-                            </span>
-                          </>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-stone-400">
-                          {u.old_birth_order ?? "—"}
-                        </span>
-                        {u.old_birth_order !== u.new_birth_order && (
-                          <>
-                            <span className="mx-2 text-stone-300">→</span>
-                            <span className="font-bold text-amber-700">
-                              {u.new_birth_order ?? "—"}
-                            </span>
-                          </>
-                        )}
-                      </td>
-                        <td className="px-4 py-3 text-center">
-                          <span
-                            className={
-                              u.old_is_in_law !== u.new_is_in_law
-                                ? "text-stone-400"
-                                : ""
-                            }
-                          >
-                            {u.old_is_in_law
-                              ? u.gender === "male"
-                                ? "Rể"
-                                : "Dâu"
-                              : "—"}
-                          </span>
-                          {u.old_is_in_law !== u.new_is_in_law && (
-                            <>
-                              <span className="mx-2 text-stone-300">→</span>
-                              <span className="font-bold text-amber-700">
-                                {u.new_is_in_law
-                                  ? u.gender === "male"
-                                    ? "Rể"
-                                    : "Dâu"
-                                  : "Máu thịt"}
-                              </span>
-                            </>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {u.changed ? (
-                            <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700 border border-amber-200/60">
-                              Cập nhật
-                            </span>
-                          ) : (
-                            <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-stone-100 text-stone-400 border border-stone-200/60">
-                              Không đổi
-                            </span>
-                          )}
-                        </td>
+                     >
+                       <td className="px-4 py-3 font-medium text-stone-800">
+                         {u.full_name}
+                       </td>
+                       <td className="px-4 py-3 text-center">
+                         <div className="flex items-center justify-center gap-1">
+                           <span className="text-stone-400">
+                             {u.old_birth_year ?? "—"}
+                           </span>
+                           <span className="mx-1 text-stone-300">→</span>
+                           <input
+                             type="number"
+                             value={u.new_birth_year ?? ""}
+                             onChange={(e) => {
+                               const val =
+                                 e.target.value === ""
+                                   ? null
+                                   : parseInt(e.target.value, 10);
+                               handleBirthYearEdit(u.id, isNaN(val as number) ? null : val);
+                             }}
+                             className="w-20 text-center font-bold text-amber-700 border border-amber-200/60 rounded-lg px-1.5 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                             placeholder="—"
+                           />
+                         </div>
+                       </td>
+                       <td className="px-4 py-3 text-center">
+                         <span className="text-stone-400">
+                           {u.old_generation ?? "—"}
+                         </span>
+                         {u.old_generation !== u.new_generation && (
+                           <>
+                             <span className="mx-2 text-stone-300">→</span>
+                             <span className="font-bold text-amber-700">
+                               {u.new_generation ?? "—"}
+                             </span>
+                           </>
+                         )}
+                       </td>
+                       <td className="px-4 py-3 text-center">
+                         <div className="flex items-center justify-center gap-1">
+                           <span className="text-stone-400">
+                             {u.old_birth_order ?? "—"}
+                           </span>
+                           <span className="mx-1 text-stone-300">→</span>
+                           <input
+                             type="number"
+                             min={1}
+                             value={u.new_birth_order ?? ""}
+                             onChange={(e) => {
+                               const val =
+                                 e.target.value === ""
+                                   ? null
+                                   : parseInt(e.target.value, 10);
+                               handleBirthOrderEdit(u.id, isNaN(val as number) ? null : val);
+                             }}
+                             className="w-16 text-center font-bold text-amber-700 border border-amber-200/60 rounded-lg px-1.5 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                             placeholder="—"
+                           />
+                         </div>
+                       </td>
+                       <td className="px-4 py-3 text-center">
+                         <span
+                           className={
+                             u.old_is_in_law !== u.new_is_in_law
+                               ? "text-stone-400"
+                               : ""
+                           }
+                         >
+                           {u.old_is_in_law
+                             ? u.gender === "male"
+                               ? "Rể"
+                               : "Dâu"
+                             : "—"}
+                           </span>
+                           {u.old_is_in_law !== u.new_is_in_law && (
+                             <>
+                               <span className="mx-2 text-stone-300">→</span>
+                               <span className="font-bold text-amber-700">
+                                 {u.new_is_in_law
+                                   ? u.gender === "male"
+                                     ? "Rể"
+                                     : "Dâu"
+                                   : "Máu thịt"}
+                               </span>
+                             </>
+                           )}
+                       </td>
+                       <td className="px-4 py-3 text-center">
+                         {u.changed ? (
+                           <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700 border border-amber-200/60">
+                             Cập nhật
+                           </span>
+                         ) : (
+                           <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-stone-100 text-stone-400 border border-stone-200/60">
+                             Không đổi
+                           </span>
+                         )}
+                       </td>
                     </tr>
                   ))}
                 </tbody>
