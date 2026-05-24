@@ -4,7 +4,7 @@ import { GalleryItem } from "@/types";
 import { useState, useEffect } from "react";
 import GalleryGrid from "./GalleryGrid";
 import UploadModal from "./modal/UploadModal";
-import { Plus, Image as ImageIcon } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function GalleryClient({ initialItems, isAdmin }: { initialItems: GalleryItem[], isAdmin: boolean }) {
